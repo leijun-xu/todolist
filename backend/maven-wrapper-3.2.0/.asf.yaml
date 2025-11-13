@@ -1,0 +1,19 @@
+# see https://s.apache.org/asfyaml
+github:
+  description: "Apache Maven Wrapper"
+  homepage: https://maven.apache.org/wrapper
+  labels:
+    - java
+    - build-management
+    - apache-maven
+    - maven
+  enabled_merge_buttons:
+    squash: true
+    merge: false
+    rebase: true
+  autolink_jira:
+    - MWRAPPER
+notifications:
+  commits: commits@maven.apache.org
+  issues: issues@maven.apache.org
+  jira_options: link label comment
