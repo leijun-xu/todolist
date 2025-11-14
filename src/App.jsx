@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Form, Input, Button, List, Card, Space, message, Modal } from 'antd'
+import dayjs from 'dayjs'
+import { Form, Input, Button, Table, Card, Space, message, Modal, DatePicker, notification } from 'antd'
 import { EditOutlined, DeleteOutlined, CheckOutlined } from '@ant-design/icons'
 import './App.css'
 import 'antd/dist/reset.css'
@@ -21,15 +22,61 @@ function App() {
         message.error('获取Todo列表失败')
       })
   }, [])
+  
+  // 检查通知时间并推送通知
+  useEffect(() => {
+    const checkNotifications = () => {
+      const now = new Date();
+      
+      todos.forEach(todo => {
+        if (todo.notificationTime) {
+          const notificationTime = new Date(todo.notificationTime);
+          // 检查是否在当前时间前后1分钟内
+          const diff = Math.abs(now - notificationTime);
+          const oneMinute = 60 * 1000;
+          
+          if (diff < oneMinute && !todo.notified) {
+            // 推送通知
+            notification.open({
+              message: `Todo提醒: ${todo.creator}`,
+              description: todo.content,
+              placement: 'topRight',
+              duration: 5,
+            });
+            
+            // 标记为已通知
+            setTodos(prevTodos => prevTodos.map(item => {
+              if (item.id === todo.id) {
+                return {...item, notified: true};
+              }
+              return item;
+            }));
+          }
+        }
+      });
+    };
+    
+    // 每分钟检查一次
+    const interval = setInterval(checkNotifications, 60 * 1000);
+    
+    // 组件卸载时清除定时器
+    return () => clearInterval(interval);
+  }, [todos])
 
   // 添加新Todo项
   const handleAddTodo = (values) => {
+    // 格式化通知时间为ISO格式
+    const todoData = {
+      ...values,
+      notificationTime: values.notificationTime ? values.notificationTime.format('YYYY-MM-DDTHH:mm:ss.SSS[Z]') : null
+    };
+    
     fetch('http://localhost:8080/api/todos', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(values),
+      body: JSON.stringify(todoData),
     })
       .then(response => response.json())
       .then(data => {
@@ -46,7 +93,12 @@ function App() {
   // 处理编辑开始
   const handleEditStart = (todo) => {
     setEditingTodo(todo)
-    editForm.setFieldsValue(todo)
+    // 将字符串格式的通知时间转换为dayjs对象
+    const formValues = {
+      ...todo,
+      notificationTime: todo.notificationTime ? dayjs(todo.notificationTime) : null
+    }
+    editForm.setFieldsValue(formValues)
     setIsModalVisible(true)
   }
 
@@ -54,12 +106,18 @@ function App() {
   const handleEditSave = (values) => {
     if (!editingTodo) return
 
+    // 格式化通知时间为ISO格式
+    const todoData = {
+      ...values,
+      notificationTime: values.notificationTime ? values.notificationTime.format('YYYY-MM-DDTHH:mm:ss.SSS[Z]') : null
+    };
+
     fetch(`http://localhost:8080/api/todos/${editingTodo.id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(values),
+      body: JSON.stringify(todoData),
     })
       .then(response => response.json())
       .then(data => {
@@ -121,6 +179,7 @@ function App() {
           onFinish={handleAddTodo}
           layout="horizontal"
           initialValues={{ creator: '', content: '' }}
+          style={{ display: 'flex', alignItems: 'flex-start' }}
         >
           <Form.Item
             name="creator"
@@ -140,7 +199,16 @@ function App() {
             <Input placeholder="请输入Todo内容" />
           </Form.Item>
           
-          <Form.Item>
+          <Form.Item
+            name="notificationTime"
+            label="通知时间"
+            rules={[{ required: true, message: '请选择通知时间' }]}
+            style={{ flex: 1, marginRight: 16 }}
+          >
+            <DatePicker showTime format="YYYY-MM-DD HH:mm" style={{ width: '100%' }} />
+          </Form.Item>
+          
+          <Form.Item style={{ marginRight: 0 }}>
             <Button type="primary" htmlType="submit">
               添加Todo
             </Button>
@@ -153,26 +221,44 @@ function App() {
         {todos.length === 0 ? (
           <p className="empty-message">暂无Todo项，请添加一个吧！</p>
         ) : (
-          <List
-            grid={{ gutter: 16, column: 1 }}
+          <Table
             dataSource={todos}
-            renderItem={(todo) => (
-              <List.Item>
-                <Card
-                  title={
-                    <div className="todo-card-header">
-                      <span className="todo-creator">{todo.creator}</span>
-                      <span className="todo-date">{formatDate(todo.createdAt)}</span>
-                    </div>
-                  }
-                  actions={[
+            columns={[
+              {
+                title: '创建人',
+                dataIndex: 'creator',
+                key: 'creator',
+              },
+              {
+                title: '内容',
+                dataIndex: 'content',
+                key: 'content',
+                ellipsis: true,
+              },
+              {
+                title: '创建时间',
+                dataIndex: 'createdAt',
+                key: 'createdAt',
+                render: (text) => formatDate(text),
+              },
+              {
+                title: '通知时间',
+                dataIndex: 'notificationTime',
+                key: 'notificationTime',
+                render: (text) => formatDate(text),
+              },
+              {
+                title: '操作',
+                key: 'action',
+                render: (_, todo) => (
+                  <Space size="middle">
                     <Button
                       icon={<EditOutlined />}
                       onClick={() => handleEditStart(todo)}
                       type="default"
                     >
                       编辑
-                    </Button>,
+                    </Button>
                     <Button
                       icon={<DeleteOutlined />}
                       onClick={() => handleDeleteTodo(todo.id)}
@@ -180,13 +266,14 @@ function App() {
                       danger
                     >
                       删除
-                    </Button>,
-                  ]}
-                >
-                  <p className="todo-content">{todo.content}</p>
-                </Card>
-              </List.Item>
-            )}
+                    </Button>
+                  </Space>
+                ),
+              },
+            ]}
+            rowKey="id"
+            pagination={{ pageSize: 10 }}
+            style={{ width: '100%' }}
           />
         )}
       </div>
@@ -194,7 +281,7 @@ function App() {
       {/* 编辑Todo模态框 */}
       <Modal
         title="编辑Todo"
-        visible={isModalVisible}
+        open={isModalVisible}
         onOk={editForm.submit}
         onCancel={handleEditCancel}
         okText="保存"
@@ -219,6 +306,14 @@ function App() {
             rules={[{ required: true, message: '请输入Todo内容' }]}
           >
             <Input placeholder="请输入Todo内容" />
+          </Form.Item>
+          
+          <Form.Item
+            name="notificationTime"
+            label="通知时间"
+            rules={[{ required: true, message: '请选择通知时间' }]}
+          >
+            <DatePicker showTime format="YYYY-MM-DD HH:mm" style={{ width: '100%' }} />
           </Form.Item>
         </Form>
       </Modal>

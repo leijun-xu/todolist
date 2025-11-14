@@ -2,6 +2,7 @@ package com.example.backend;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDateTime;
 
@@ -22,6 +23,9 @@ public class Todo {
     private String content;
     
     private LocalDateTime createdAt;
+    
+    @NotNull(message = "通知时间不能为空")
+    private LocalDateTime notificationTime;
     
     @PrePersist
     protected void onCreate() {
@@ -59,5 +63,13 @@ public class Todo {
     
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+    
+    public LocalDateTime getNotificationTime() {
+        return notificationTime;
+    }
+    
+    public void setNotificationTime(LocalDateTime notificationTime) {
+        this.notificationTime = notificationTime;
     }
 }
