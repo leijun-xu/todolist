@@ -11,7 +11,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/todos")
-@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:5174"}) // 允许前端React应用访问
+@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:5174", "http://localhost:3000"}) // 允许前端React应用访问
 public class TodoController {
     
     @Autowired

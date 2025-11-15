@@ -1,10 +1,4 @@
 module.exports = [
-"[externals]/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js [external] (next/dist/compiled/next-server/app-page-turbo.runtime.dev.js, cjs)", ((__turbopack_context__, module, exports) => {
-
-const mod = __turbopack_context__.x("next/dist/compiled/next-server/app-page-turbo.runtime.dev.js", () => require("next/dist/compiled/next-server/app-page-turbo.runtime.dev.js"));
-
-module.exports = mod;
-}),
 "[project]/app/page.jsx [app-ssr] (ecmascript)", ((__turbopack_context__) => {
 "use strict";
 
@@ -528,4 +522,4 @@ const __TURBOPACK__default__export__ = Home;
 }),
 ];
 
-//# sourceMappingURL=%5Broot-of-the-server%5D__7ec433f8._.js.map
+//# sourceMappingURL=app_page_jsx_d8c29885._.js.map

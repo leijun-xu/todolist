@@ -16,7 +16,14 @@ function Home() {
   useEffect(() => {
     fetch('http://localhost:8080/api/todos')
       .then(response => response.json())
-      .then(data => setTodos(data))
+      .then(data => {
+        console.log('Fetched todos:', data)
+        // 检查每个Todo项的id字段
+        data.forEach((todo, index) => {
+          console.log(`Todo ${index} id: ${todo.id}, type: ${typeof todo.id}`)
+        })
+        setTodos(data)
+      })
       .catch(error => {
         console.error('Error fetching todos:', error)
         message.error('获取Todo列表失败')
@@ -147,15 +154,30 @@ function Home() {
       okType: 'danger',
       cancelText: '取消',
       onOk() {
+        console.log('Attempting to delete todo with id:', todoId)
+        console.log('Todo ID type:', typeof todoId)
+        console.log('Todo ID value:', todoId)
         fetch(`http://localhost:8080/api/todos/${todoId}`, {
           method: 'DELETE',
         })
-          .then(() => {
-            setTodos(prevTodos => prevTodos.filter(todo => todo.id !== todoId))
-            message.success('删除Todo成功')
+          .then(response => {
+            console.log('Delete response status:', response.status)
+            console.log('Delete response headers:', response.headers)
+            if (response.ok) {
+              // 确保id比较时类型一致
+              const normalizedTodoId = Number(todoId);
+              setTodos(prevTodos => prevTodos.filter(todo => Number(todo.id) !== normalizedTodoId))
+              message.success('删除Todo成功')
+              // 检查更新后的Todos列表
+              console.log('Updated todos:', prevTodos.filter(todo => Number(todo.id) !== normalizedTodoId))
+            } else {
+              throw new Error('Delete failed with status: ' + response.status)
+            }
           })
           .catch(error => {
             console.error('Error deleting todo:', error)
+            console.error('Error name:', error.name)
+            console.error('Error message:', error.message)
             message.error('删除Todo失败')
           })
       },
