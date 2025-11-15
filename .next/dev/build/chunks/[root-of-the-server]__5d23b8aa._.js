@@ -21,7 +21,7 @@ module.exports = mod;
 
 module.exports = {
     plugins: {
-        tailwindcss: {},
+        '@tailwindcss/postcss': {},
         autoprefixer: {}
     }
 };
